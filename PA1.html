@@ -124,6 +124,8 @@ $(document).ready(function () {
 <p>Load the libraries</p>
 <pre class="r"><code>library(data.table)
 library(ggplot2)</code></pre>
+<pre class="r"><code>knitr::opts_chunk$set(
+  fig.path = &quot;images/&quot;)</code></pre>
 <p>Load the data ‘activity.csv’ previously downloaded from Coursera (<a href="https://www.coursera.org/learn/reproducible-research/peer/gYyPt/course-project-1" class="uri">https://www.coursera.org/learn/reproducible-research/peer/gYyPt/course-project-1</a>)</p>
 <pre class="r"><code>aData &lt;- read.csv('activity.csv')
 summary(aData)</code></pre>
@@ -151,7 +153,9 @@ head(day_steps)</code></pre>
 ## 5 2012-10-06 15420
 ## 6 2012-10-07 11015</code></pre>
 <p>Create a histogram of the steps per day</p>
-<pre class="r"><code>ggplot(day_steps, aes(x = steps)) + 
+<pre class="r"><code>knitr::opts_chunk$set(
+  fig.path = &quot;images/&quot;)
+ggplot(day_steps, aes(x = steps)) + 
         geom_histogram(fill = &quot;blue&quot;, binwidth = 1000) + 
          labs(title=&quot;Histogram of Steps Taken per Day&quot;, 
          x = &quot;Number of Steps per Day&quot;, y = &quot;Number of times in a day(Count)&quot;) + theme_bw()</code></pre>

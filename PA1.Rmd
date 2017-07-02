@@ -1,0 +1,173 @@
+---
+output: 
+  html_document: 
+    fig_caption: yes
+    toc: yes
+---
+hReproducible Research: Peer Assessment 1
+
+T. van Dam
+
+Load the libraries
+```{r}
+library(data.table)
+library(ggplot2)
+```
+```{r}
+knitr::opts_chunk$set(
+  fig.path = "images/")
+```
+
+
+Load the data 'activity.csv' previously downloaded from Coursera (https://www.coursera.org/learn/reproducible-research/peer/gYyPt/course-project-1)
+
+```{r}
+aData <- read.csv('activity.csv')
+summary(aData)
+```
+What is the mean total number of steps taken per day?
+
+Assign the Date class to date and Factor class to interval
+
+```{r}
+aData$date <- as.Date(aData$date, format = "%Y-%m-%d")
+aData$interval <- as.factor(aData$interval)
+```
+
+Calculate the total steps per day ignoring NA
+
+```{r}
+day_steps <- aggregate(steps ~ date, aData, sum)
+colnames(day_steps) <- c("date","steps")
+head(day_steps)
+```
+
+Create a histogram of the steps per day
+
+```{r}
+knitr::opts_chunk$set(
+  fig.path = "images/")
+ggplot(day_steps, aes(x = steps)) + 
+        geom_histogram(fill = "blue", binwidth = 1000) + 
+         labs(title="Histogram of Steps Taken per Day", 
+         x = "Number of Steps per Day", y = "Number of times in a day(Count)") + theme_bw()
+```
+
+Calculate the mean and the median number of steps per day
+
+```{r}
+steps_mean   <- mean(day_steps$steps, na.rm=TRUE)
+steps_median <- median(day_steps$steps, na.rm=TRUE)
+steps_mean
+steps_median
+```
+The mean is 10766.189 and median is 10765.
+
+What is the average daily activity pattern?
+
+Calculate the aggregation of steps by intervals of 5-minutes and convert the intervals as integers and save them in a data frame called steps_per_interval.
+
+```{r}
+steps_per_interval <- aggregate(aData$steps, 
+                                by = list(interval = aData$interval),
+                                FUN=mean, na.rm=TRUE)
+#convert to integers
+##this helps in plotting
+steps_per_interval$interval <- 
+        as.integer(levels(steps_per_interval$interval)[steps_per_interval$interval])
+colnames(steps_per_interval) <- c("interval", "steps")
+str(steps_per_interval)
+
+```
+
+Plot the time series of the average number of steps taken.
+
+```{r}
+ggplot(steps_per_interval, aes(x=interval, y=steps)) +   
+        geom_line(color="blue", size=1) +  
+        labs(title="Average Daily Activity Pattern", x="Interval",y="Number of steps") +  
+        theme_bw()
+```
+
+Find the 5-minute interval containing the maximum number of steps.
+```{r}
+max_interval <- steps_per_interval[which.max(  
+        steps_per_interval$steps),]
+max_interval
+```
+Interval 835 has the most steps; it has 206 steps.
+
+Imputing the missing values:
+Calculate the total number of missing values in steps
+
+```{r}
+missing_vals <- sum(is.na(aData$steps))
+missing_vals
+```
+
+There are a total of 2304 missing values.
+
+Devise a strategy for filling in all of the missing values in the data set
+Strategy: fill the missing values with the mean of the day
+```{r}
+aData_new <- merge(aData, day_steps, by="date", suffixes=c("", ".mean"))
+nas <- is.na(aData_new$steps)
+aData_new$steps[nas] <- aData_new$steps.mean[nas]
+aData_new <- aData_new[, c(1:3)]
+head(aData_new)
+```
+
+Make a histogram of the total number of steps taken each day
+```{r}
+day_steps_new <- tapply(aData_new$steps, aData_new$date, sum)
+qplot(day_steps_new, xlab='Total steps per day (Imputed)', ylab='Frequency using binwith 500', binwidth=500)
+```
+Calculate the total number of steps taken per day
+```{r}
+steps_mean_new   <- mean(day_steps_new)
+steps_median_new <- median(day_steps_new)
+steps_mean_new
+steps_median_new
+```
+The mean of the total number of steps taken per day = 10766
+The median of the total number of steps taken per day = 10765
+
+Data are not affected by imputation. This makes sense because imputation uses the mean for that particular day but steps are NA for that entire day.
+
+Are there differences in activity patterns patterns between weekdays and weekends?
+
+Add new factor variable dayType with 2 levels – “weekday” and “weekend”
+
+```{r}
+dayType <- function(dates) {
+  f <- function(date) {
+    if (weekdays(date) %in% c("Saturday", "Sunday")) {
+      "weekend"
+    }
+    else {
+      "weekday"
+    }
+  }
+  sapply(dates, f)
+}
+aData$wday <- as.factor(dayType(aData$date))
+head(aData)
+str(aData)
+
+```
+Create a plot containing a time series plot of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekdays and weekends
+
+```{r}
+steps_per_interval<-aggregate(steps ~ interval + wday, aData, mean)
+head(steps_per_interval)
+str(steps_per_interval)
+```
+
+```{r}
+ggplot(steps_per_interval, aes(as.numeric(interval), steps)) + 
+    geom_line() + 
+    facet_grid(wday ~ .) +
+    xlab("5-minute interval") + 
+    ylab("avarage number of steps")
+```
+The activity in the weekday results shows that the number of steps is greatest for an interval of about 800 minutes. In the weekend plot, the peaks are all about equal and span from 800-2000 minutes. For this individual it seems as though they workout once per day during the week. then on the weekend they are active over a longer period.
